@@ -5,7 +5,7 @@ comfyApp.registerExtension({
     name: "endericedragon.comfy-jan-llm",
     settings: [
         {
-            id: "api_key",
+            id: "comfy-jan-llm.api_key",
             name: "API Key for Jan LLM API",
             type: "text",
             defaultValue: "",
