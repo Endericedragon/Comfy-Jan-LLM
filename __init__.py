@@ -2,9 +2,9 @@ from comfy_api.v0_0_2 import ComfyExtension, io
 from aiohttp import web
 from server import PromptServer
 
-from .jan_utils import DEFAULT_JAN_IP, DEFAULT_SYS_PROMPT, JanConnect
+from .jan_utils import DEFAULT_JAN_URL, DEFAULT_SYS_PROMPT, JanConnect
 
-jan_conn = JanConnect(DEFAULT_JAN_IP, "")
+jan_conn = JanConnect(DEFAULT_JAN_URL, "")
 
 
 class JanLLMApi(io.ComfyNode):
@@ -17,7 +17,7 @@ class JanLLMApi(io.ComfyNode):
             node_id="JanLLMApi",
             display_name="Jan LLM API",
             inputs=[
-                io.String.Input("jan_addr", "Jan Address", default=DEFAULT_JAN_IP),
+                io.String.Input("jan_addr", "Jan Address", default=DEFAULT_JAN_URL),
                 io.Combo.Input("model", jan_conn.get_models()),
                 io.String.Input(
                     "sys_prompt", default=DEFAULT_SYS_PROMPT, multiline=True
@@ -33,7 +33,7 @@ class JanLLMApi(io.ComfyNode):
         global jan_conn
         jan_conn.jan_url = kwargs["jan_addr"]
         json_info = jan_conn.chat(
-            kwargs["model"], kwargs["sys_prompt"] + "\n" + kwargs["prompt"]
+            kwargs["model"], kwargs["sys_prompt"] + "\n\n" + kwargs["prompt"]
         )
         return io.NodeOutput(json_info)
 

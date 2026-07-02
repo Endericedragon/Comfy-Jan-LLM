@@ -17,5 +17,13 @@ comfyApp.registerExtension({
                 });
             }
         }
-    ]
+    ],
+    async setup() {
+        console.log("Comfy-Jan-LLM is loaded!");
+        await comfyApp.api.fetchApi("/jan-llm/set-api-key", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: app.extensionManager.setting.get("api_key") || ""
+        });
+    }
 })
