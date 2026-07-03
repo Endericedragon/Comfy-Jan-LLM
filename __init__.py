@@ -8,9 +8,6 @@ jan_conn = JanConnect(DEFAULT_JAN_URL, "")
 
 
 class JanLLMApi(io.ComfyNode):
-    def __init__(self, *args, **kws):
-        super().__init__(*args, **kws)
-
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -22,7 +19,7 @@ class JanLLMApi(io.ComfyNode):
                 io.String.Input(
                     "sys_prompt", default=DEFAULT_SYS_PROMPT, multiline=True
                 ),
-                io.String.Input("prompt", default="Hello", multiline=True),
+                io.String.Input("prompt", default="1girl, solo,", multiline=True),
             ],
             outputs=[io.String.Output("opt_prompt", "Optimized Prompt")],
             is_output_node=True,
@@ -32,10 +29,8 @@ class JanLLMApi(io.ComfyNode):
     def execute(cls, **kwargs) -> io.NodeOutput:
         global jan_conn
         jan_conn.jan_url = kwargs["jan_addr"]
-        json_info = jan_conn.chat(
-            kwargs["model"], kwargs["sys_prompt"] + "\n\n" + kwargs["prompt"]
-        )
-        return io.NodeOutput(json_info)
+        res = jan_conn.chat(kwargs["model"], kwargs["sys_prompt"], kwargs["prompt"])
+        return io.NodeOutput(res)
 
 
 class JanLLMExtension(ComfyExtension):

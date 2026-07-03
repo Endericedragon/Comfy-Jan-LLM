@@ -1,4 +1,5 @@
 from enum import Enum
+import sys
 from typing import List, TypedDict
 import requests
 
@@ -30,11 +31,24 @@ Strictly adhere to these constraints:
 3. If the user's input is too vague (e.g., only `1girl` with no other traits), ask for clarification first; do not invent conflicting attributes out of thin air.
 4. You are allowed to make reasonable creative additions based on common Danbooru tropes (e.g., expanding `fox girl` with `kitsune, fox ears, fox tail`), as long as they are logically consistent with the given input.
 
-Example:
+Example1:
 User input: 1girl, fox girl,
-Model output: 1girl, solo, fox girl, kitsune, fox ears, animal ear fluff, white hair, long hair, red eyes, light smile, medium breast, fox tail, chihaya \\(clothing\\), ribbon-trimmed sleeves, hakama skirt, ribbon-trimmed thighhighs, yokozuwari, shrine, torii,
+Model output: 1girl, solo, fox girl, kitsune, fox ears, animal ear fluff, fox tail, detached sleeves, ribbon-trimmed sleeves, hakama skirt, ribbon-trimmed thighhighs, shrine, torii,
+
+Example2:
+User input: 1girl, sad,
+Model output: 1girl, solo, sad, crying, tears, looking down, long hair, brown hair, blue eyes, medium breasts, school uniform, white shirt, blue pleated skirt, kneehighs, rain, wet, city street, night, streetlight,
+
+Example3:
+User input: 1girl, knight, sword,
+Model output: 1girl, solo, knight, holding sword, standing, full plate armor, helmet, cape, blonde hair, medium hair, serious, blue eyes, closed mouth, castle interior, torchlight, stone walls,
+
+Example4:
+User input: 2girls, twins, hugging,
+Model output: 2girls, twins, hugging, smiling, close-up, long hair, pink hair, green eyes, small breasts, matching sundresses, flower crown, park, daytime, sunlight, cherry blossoms,
 
 Now, please expand and refine the following prompt based on the above rules:"""
+USE_NO_LLM: str = "Off"
 
 
 class JanAPI(Enum):
@@ -48,21 +62,28 @@ class JanConnect:
         self.api_key = api_key
 
     def get_models(self) -> List[str]:
-        resp = requests.get(
-            self.jan_url + JanAPI.MODELS.value,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {}".format(self.api_key),
-            },
-        )
-        if resp.status_code == 200:
+        res = [USE_NO_LLM]
+        try:
+            resp = requests.get(
+                self.jan_url + JanAPI.MODELS.value,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer {}".format(self.api_key),
+                },
+                timeout=1,  # 快操作
+            )
+            assert resp.status_code == 200
             info: RespModels = resp.json()
-            return list(map(lambda x: x["id"], info["data"]))
-        else:
-            print(resp.status_code, resp.text)
-            return []
+            res.extend(list(map(lambda x: x["id"], info["data"])))
+        except Exception as e:
+            print(type(e), e, file=sys.stderr)
+        finally:
+            return res
 
-    def chat(self, model: str, prompt: str) -> str:
+    def chat(self, model: str, sys_prompt: str, prompt: str) -> str:
+        if model == USE_NO_LLM:
+            return prompt
+        full_prompt = sys_prompt + "\n\n" + prompt
         resp = requests.post(
             self.jan_url + JanAPI.CHAT.value,
             headers={
@@ -71,11 +92,8 @@ class JanConnect:
             },
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [{"role": "user", "content": full_prompt}],
             },
         )
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        else:
-            print(resp.status_code, resp.text)
-            return ""
+        assert resp.status_code == 200
+        return resp.json()["choices"][0]["message"]["content"]
