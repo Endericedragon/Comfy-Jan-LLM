@@ -1,3 +1,4 @@
+from hashlib import md5
 from pathlib import Path
 
 from aiohttp import web
@@ -8,14 +9,15 @@ from .jan_utils import DEFAULT_JAN_URL, JanConnect
 from .markdown_watcher import MarkdownWatcher
 
 jan_conn = JanConnect(DEFAULT_JAN_URL, "")
+watcher = MarkdownWatcher(Path(__file__).parent / "default_prompts")
 
-watchdog = MarkdownWatcher(Path(__file__).parent / "default_prompts")
+cur_sys_prompt_hash: str = ""
 
 
 class JanLLMApi(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
-        prompt_styles = list(watchdog.inspect().keys())
+        prompt_styles = list(watcher.inspect().keys())
         prompt_styles.append("Customize")
         return io.Schema(
             node_id="JanLLMApi",
@@ -37,21 +39,24 @@ class JanLLMApi(io.ComfyNode):
 
     @classmethod
     def execute(cls, **kwargs) -> io.NodeOutput:
-        global jan_conn
+        global jan_conn, cur_sys_prompt_hash
         jan_conn.jan_url = kwargs["jan_addr"]
-        prompt_style = kwargs["prompt_style"]
+        prompt_style_name: str = kwargs["prompt_style"]
+        prompt_style = watcher.inspect()[prompt_style_name]
         sys_prompt: str = (
             kwargs["sys_prompt"]
-            if prompt_style == "Customize"
-            else watchdog.inspect()[prompt_style].read_text()
+            if prompt_style_name == "Customize"
+            else prompt_style.read_text()
         )
+        cur_sys_prompt_hash = md5(sys_prompt.encode()).hexdigest()
 
         res = jan_conn.chat(kwargs["model"], sys_prompt, kwargs["prompt"])
         return io.NodeOutput(res)
 
     @classmethod
     def fingerprint_inputs(cls, **kwargs) -> str:
-        return str(kwargs)
+        global cur_sys_prompt_hash
+        return str(kwargs) + str(cur_sys_prompt_hash)
 
 
 class JanLLMExtension(ComfyExtension):
