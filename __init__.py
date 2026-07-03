@@ -41,6 +41,10 @@ class JanLLMApi(io.ComfyNode):
 
         res = jan_conn.chat(kwargs["model"], sys_prompt, kwargs["prompt"])
         return io.NodeOutput(res)
+    
+    @classmethod
+    def fingerprint_inputs(cls, **kwargs) -> str:
+        return str(kwargs)
 
 
 class JanLLMExtension(ComfyExtension):
