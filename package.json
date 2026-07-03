@@ -1,0 +1,15 @@
+{
+  "name": "comfy-jan-llm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@comfyorg/comfyui-frontend-types": "latest",
+    "typescript": "^6.0.3"
+  }
+}

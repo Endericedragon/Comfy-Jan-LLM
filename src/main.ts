@@ -1,4 +1,6 @@
-const comfyApp = window.comfyAPI.app.app;
+import type { Window } from "./comfyApp";
+const comfyApp = (window as unknown as Window).comfyAPI.app.app;
+
 comfyApp.registerExtension({
     name: "endericedragon.comfy-jan-llm",
     settings: [
@@ -7,7 +9,7 @@ comfyApp.registerExtension({
             name: "API Key for Jan LLM API",
             type: "text",
             defaultValue: "",
-            onChange: async (nv, _ov) => {
+            onChange: async (nv: string, _ov: string) => {
                 await comfyApp.api.fetchApi("/jan-llm/set-api-key", {
                     method: "POST",
                     headers: { "Content-Type": "text/plain" },
@@ -20,15 +22,14 @@ comfyApp.registerExtension({
         if (node.comfyClass !== "JanLLMApi") {
             return;
         }
-        const ps = node.widgets?.find(w => w.name.includes("prompt_style"));
-        const sp = node.widgets?.find(w => w.name.includes("sys_prompt"));
+        const ps = node.widgets?.find(w => w.name.includes("prompt_style"))!!;
+        const sp = node.widgets?.find(w => w.name.includes("sys_prompt"))!!;
         sp.hidden = true;
-        ps.callback = (val) => {
+        ps.callback = (val: string) => {
             if (val === "Customize") {
                 sp.value = "";
                 sp.hidden = false;
-            }
-            else {
+            } else {
                 sp.hidden = true;
             }
         };
@@ -41,5 +42,4 @@ comfyApp.registerExtension({
             body: comfyApp.extensionManager.setting.get("api_key") || ""
         });
     }
-});
-export {};
+})
