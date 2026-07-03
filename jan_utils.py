@@ -19,33 +19,6 @@ class RespModels(TypedDict):
 
 
 DEFAULT_JAN_URL: str = "http://127.0.0.1:1337/v1"
-
-
-def build_prompt_style():
-    with open(
-        Path(__file__).parent / "default_prompts" / "tags_only.md",
-        "r",
-        encoding="utf-8",
-    ) as f:
-        tags_only = f.read()
-    with open(
-        Path(__file__).parent / "default_prompts" / "tags_plus_nl.md",
-        "r",
-        encoding="utf-8",
-    ) as f:
-        tags_plus_nl = f.read()
-
-    class PromptStyle(Enum):
-        TagsOnly = tags_only
-        TagsPlusNL = tags_plus_nl
-        Customize = ""
-
-    return PromptStyle
-
-
-PromptStyle = build_prompt_style()
-
-
 USE_NO_LLM: str = "Off"
 
 

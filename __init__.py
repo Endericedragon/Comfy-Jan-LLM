@@ -1,15 +1,22 @@
-from comfy_api.v0_0_2 import ComfyExtension, io
+from pathlib import Path
+
 from aiohttp import web
+from comfy_api.v0_0_2 import ComfyExtension, io
 from server import PromptServer
 
-from .jan_utils import DEFAULT_JAN_URL, PromptStyle, JanConnect
+from .jan_utils import DEFAULT_JAN_URL, JanConnect
+from .markdown_watcher import MarkdownWatcher
 
 jan_conn = JanConnect(DEFAULT_JAN_URL, "")
+
+watchdog = MarkdownWatcher(Path(__file__).parent / "default_prompts")
 
 
 class JanLLMApi(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
+        prompt_styles = list(watchdog.inspect().keys())
+        prompt_styles.append("Customize")
         return io.Schema(
             node_id="JanLLMApi",
             display_name="Jan LLM API",
@@ -18,8 +25,8 @@ class JanLLMApi(io.ComfyNode):
                 io.Combo.Input("model", jan_conn.get_models()),
                 io.Combo.Input(
                     "prompt_style",
-                    list(PromptStyle.__members__.keys()),
-                    default=PromptStyle.TagsOnly.value,
+                    options=prompt_styles,
+                    default=prompt_styles[0],
                 ),
                 io.String.Input("sys_prompt", default="", multiline=True),
                 io.String.Input("prompt", default="1girl, solo,", multiline=True),
@@ -35,13 +42,13 @@ class JanLLMApi(io.ComfyNode):
         prompt_style = kwargs["prompt_style"]
         sys_prompt: str = (
             kwargs["sys_prompt"]
-            if prompt_style == PromptStyle.Customize.value
-            else PromptStyle.__members__[prompt_style].value
+            if prompt_style == "Customize"
+            else watchdog.inspect()[prompt_style].read_text()
         )
 
         res = jan_conn.chat(kwargs["model"], sys_prompt, kwargs["prompt"])
         return io.NodeOutput(res)
-    
+
     @classmethod
     def fingerprint_inputs(cls, **kwargs) -> str:
         return str(kwargs)
