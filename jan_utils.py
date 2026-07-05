@@ -41,7 +41,7 @@ class JanConnect:
                     "Content-Type": "application/json",
                     "Authorization": "Bearer {}".format(self.api_key),
                 },
-                timeout=1,  # 快操作
+                timeout=0.4,  # 快操作
             )
             assert resp.status_code == 200
             info: RespModels = resp.json()
@@ -54,7 +54,6 @@ class JanConnect:
     def chat(self, model: str, sys_prompt: str, prompt: str) -> str:
         if model == USE_NO_LLM:
             return prompt
-        full_prompt = sys_prompt + "\n\n" + prompt
         resp = requests.post(
             self.jan_url + JanAPI.CHAT.value,
             headers={
@@ -63,8 +62,14 @@ class JanConnect:
             },
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": full_prompt}],
+                "messages": [
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": prompt},
+                ],
             },
         )
-        assert resp.status_code == 200
-        return resp.json()["choices"][0]["message"]["content"]
+        if resp.status_code == 200:
+            return resp.json()["choices"][0]["message"]["content"]
+        else:
+            print(resp.status_code, resp.text, file=sys.stderr)
+            return prompt
